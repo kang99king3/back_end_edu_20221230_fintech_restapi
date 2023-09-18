@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hk.shop.repository.OrderRepository">
+
+	<resultMap type="MemberDto" id="MemberDtoMap">
+		<result property="member_id" column="member_id" /> 
+		<result property="name" column="name" /> 
+		<result property="email" column="email" /> 
+		<result property="password" column="password" /> 
+		<result property="address" column="address" /> 
+		<result property="role" column="role" /> 
+<!-- 		<association property="orderHistDtoList" resultMap="OrderHistDtoMap"></association> -->
+	</resultMap>
+	
+	<resultMap type="OrderDto" id="OrderDtoMap">
+		<id property="order_id" column="order_id"/>
+<!-- 		<result property="order_id" column="order_id" /> -->
+		<result property="member_id" column="member_id" />
+		<result property="order_date" column="order_date" />
+		<result property="order_status" column="order_status" />
+		<result property="regTime" column="regTime" />
+		<result property="updateTime" column="updateTime" />
+<!-- 		<association property="memberDto"  resultMap="MemberDtoMap"></association> -->
+<!-- 		<association property="orderItemList" resultMap="OrderItemDtoMap"></association> -->
+		<association property="orderHistDtoList" resultMap="OrderHistDtoMap"></association>
+	</resultMap>
+
+	<resultMap type="OrderHistDto" id="OrderHistDtoMap">
+<!-- 		<result property="order_id" column="order_id" /> -->
+<!-- 		<result property="order_date" column="order_date" /> -->
+<!-- 		<result property="order_status" column="order_status" /> -->
+		<result property="order_price" column="order_price" />
+		<result property="count" column="count" />
+		<result property="item_nm" column="item_nm" />
+		<result property="img_url" column="img_url" />
+	</resultMap>
+	
+<!-- 	<resultMap type="ItemDto" id="ItemDto"> -->
+<!-- 		<result property="" column="" /> -->
+<!-- 	</resultMap> -->
+	
+<!-- 	<resultMap type="ItemImgDto" id="ItemImgDto"> -->
+<!-- 		<result property="" column="" /> -->
+<!-- 	</resultMap> -->
+	
+	<insert id="addOrder" parameterType="OrderDto" keyProperty="order_id"
+	useGeneratedKeys="true">
+		insert into orders (order_id, member_id, order_date, order_status, reg_time, created_by)
+		values (NULL,#{memberDto.member_id}, sysdate(), #{order_status}, sysdate(),#{memberDto.email})
+	</insert>
+
+	<insert id="addOrderItem" parameterType="OrderItemDto">
+		INSERT INTO order_item (order_item_id, order_id,  reg_time,created_by,
+                        COUNT, order_price, item_id)
+		VALUES (NULL, #{order_id}, sysdate(),
+				#{orderDto.memberDto.email},#{count},#{order_price},#{item_id})
+	</insert>
+	
+	<update id="stockUpdate" parameterType="ItemDto">
+		UPDATE item SET stock_number=#{stock_number} 
+		WHERE item_id = #{item_id}
+	</update>
+	<select id="getOrderList" parameterType="String" resultMap="OrderDtoMap">
+		<![CDATA[
+			SELECT order_id, order_date, order_price, count, item_nm, 
+	       	img_url, order_status
+			from
+			(SELECT ROW_NUMBER() over(ORDER BY o.order_date  ) rn, m.member_id,o.order_id, o.order_date,ot.order_price, ot.count, i.item_nm, 
+			       im.img_url, o.order_status
+			FROM member m JOIN orders o
+			ON m.member_id = o.member_id
+			JOIN order_item ot ON o.order_id = ot.order_id
+			JOIN item i ON ot.item_id = i.item_id
+			JOIN item_img im ON i.item_id = im.item_id
+			WHERE m.email = #{email}
+			AND im.repimg_yn = 'Y'
+			) a 
+			WHERE rn <= 10
+		]]>
+	</select>
+<!-- 	<select id="getCart" parameterType="Long" resultType="CartDto"> -->
+<!-- 		select cart_id, member_id -->
+<!-- 		from cart -->
+<!-- 		where member_id = #{member_id} -->
+<!-- 	</select> -->
+	
+<!-- 	<select id="getCartItem" parameterType="CartItemDto" resultType="CartItemDto"> -->
+<!-- 		select cart_item_id, count, cart_id, item_id -->
+<!-- 		from cart_item -->
+<!-- 		where cart_id=#{cart_id} and item_id=#{item_id} -->
+<!-- 	</select> -->
+	
+<!-- 	<update id="addCount" parameterType="CartItemDto"> -->
+<!-- 		update cart_item set count = #{count}  -->
+<!-- 		where cart_item_id = #{cart_item_id} -->
+<!-- 	</update> -->
+</mapper>
+
+

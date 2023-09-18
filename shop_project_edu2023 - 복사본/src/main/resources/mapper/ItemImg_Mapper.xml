@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hk.shop.repository.ItemImgRepository">
+
+<!-- 	<resultMap type="ItemImgDto" id="itemImgDtoMap"> -->
+<!-- 		<result property="item_img_id" column="item_img_id" /> -->
+<!-- 		<result property="img_name" column="img_name" /> -->
+<!-- 		<result property="ori_img_name" column="ori_img_name" /> -->
+<!-- 		<result property="img_url" column="img_url" /> -->
+<!-- 		<result property="repimg_yn" column="repimg_yn" /> -->
+<!-- 		<association property="itemDto" ></association> -->
+<!-- 	</resultMap> -->
+	
+	<insert id="insertItemImg" parameterType="ItemImgDto">
+		insert into item_img 
+		(item_img_id, item_id, img_name, img_url, ori_img_name, repimg_yn,reg_time,created_by)
+		values(NULL, #{item_id}, #{img_name},#{img_url},#{ori_img_name},
+                                #{repimg_yn},SYSDATE(),#{created_by})
+	</insert>
+	
+	<select id="getItemImg" parameterType="Long" resultType="ItemImgDto">
+		select item_img_id, item_id, img_name, img_url, ori_img_name, repimg_yn,reg_time,created_by
+		from item_img
+		where item_img_id = #{item_img_id}
+	</select>
+	
+	<update id="updateItemImg" parameterType="ItemImgDto">
+		update item_img set img_name = #{img_name}, img_url = #{img_url}
+		, ori_img_name = #{ori_img_name}, update_time = SYSDATE(), 
+		modified_by = #{modified_by}
+		where item_img_id = #{item_img_id}
+	</update>
+	
+</mapper>
+
+

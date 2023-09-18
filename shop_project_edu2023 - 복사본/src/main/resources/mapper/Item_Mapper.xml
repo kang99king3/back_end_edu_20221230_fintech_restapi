@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hk.shop.repository.ItemRepository">
+
+	<resultMap type="ItemDto" id="ItemDtoMap">
+		<result property="item_id" column="item_id" />
+		<result property="item_nm" column="item_nm" />
+		<result property="price" column="price" />
+		<result property="stock_number" column="stock_number" />
+		<result property="item_detail" column="item_detail" />
+		<result property="item_sell_status" column="item_sell_status" />
+		<result property="created_by" column="created_by"/>
+		<result property="reg_time" column="reg_time" />
+		<result property="update_time" column="update_time" />
+		<association property="itemImgDtoList" resultMap="ItemImgDtoMap"></association>
+	</resultMap>
+
+	<resultMap type="ItemImgDto" id="ItemImgDtoMap">
+		<result property="item_img_id" column="item_img_id" />
+		<result property="img_name" column="img_name" />
+		<result property="ori_img_name" column="ori_img_name" />
+		<result property="img_url" column="img_url" />
+		<result property="repimg_yn" column="repimg_yn" />
+		<result property="item_id" column="item_id" />
+		<result property="reg_time" column="reg_time" />
+		<result property="update_time" column="update_time" />
+	</resultMap>
+
+	<insert id="insertItem" parameterType="ItemDto"
+	keyProperty="item_id" useGeneratedKeys="true">
+		insert into item 
+		(item_id,item_nm, price, stock_number,item_detail,item_sell_status,created_by, reg_time )
+		values(NULL,#{item_nm},#{price},#{stock_number},#{item_detail},#{item_sell_status},
+		       #{created_by},SYSDATE())
+	</insert>
+	
+	<select id="getItemList" parameterType="String" resultType="ItemDto" >
+		select item_id,item_nm, price, stock_number,item_detail,item_sell_status,reg_time, update_time
+		from item
+		where item_nm = #{item_nm}
+		order by item_id
+	</select>
+	
+	<select id="getMainItem" parameterType="Map" resultMap="ItemDtoMap">
+		select item_id,item_nm,item_detail,img_url,price, item_sell_status
+			  ,reg_time,created_by
+		from
+		(SELECT ROW_NUMBER() over(ORDER BY i.reg_time desc) r , i.item_id,item_nm,item_detail,img_url,price, item_sell_status
+		,i.reg_time,i.created_by
+		FROM item i join item_img g
+		ON i.item_id = g.item_id 
+		<where>
+			<if test="itemSearchCommand.searchQuery!=null">
+				item_nm like concat('%',#{itemSearchCommand.searchQuery},'%')
+			</if>
+			and repimg_yn = 'Y'
+		</where>
+		) a
+	
+		where ceil(r/#{itemSearchCommand.rowRange}) = #{itemSearchCommand.pnum};		
+
+	</select>
+	
+	<select id="getAdimItem" parameterType="Map" resultMap="ItemDtoMap">
+		select item_id,item_nm,item_detail,img_url,price, item_sell_status
+			  ,reg_time,created_by
+		from
+		(SELECT ROW_NUMBER() over(ORDER BY i.reg_time desc) r , i.item_id,item_nm,item_detail,img_url,price, item_sell_status
+		,i.reg_time,i.created_by
+		FROM item i join item_img g
+		ON i.item_id = g.item_id 
+		<where>
+			<if test="itemSearchCommand.searchQuery!=null and itemSearchCommand.searchBy eq null">
+				item_nm like concat('%',#{itemSearchCommand.searchQuery},'%')
+			</if>
+		
+			<if test="itemSearchCommand.searchQuery!=null and itemSearchCommand.searchBy!=null">
+				<choose>
+					<when test="itemSearchCommand.searchBy eq 'item_nm'">
+					 item_nm like concat('%',#{itemSearchCommand.searchQuery},'%')					
+					</when>
+					<when test="itemSearchCommand.searchBy eq 'created_by'">
+					 i.created_by like concat('%',#{itemSearchCommand.searchQuery},'%')					
+					</when>
+				</choose>
+			</if>
+			
+			<if test="itemSearchCommand.searchDateType!=null and itemSearchCommand.searchDateType!='all' ">
+				<choose>
+					<when test="itemSearchCommand.searchDateType eq '1d'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 day) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '1w'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 week) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '1m'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 month) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '6m'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 6 month) AND NOW())
+					</when>
+				</choose>
+				
+			</if>
+			<if test="itemSearchCommand.searchSellStatus!=null">
+				and item_sell_status = #{itemSearchCommand.searchSellStatus}
+			</if>
+			and repimg_yn = 'Y'
+		</where>
+		) a
+	
+		where ceil(r/#{itemSearchCommand.rowRange}) = #{itemSearchCommand.pnum};		
+
+	</select>
+	
+	<select id="pageCount"  parameterType="Map" resultType="int" >
+		SELECT ceil(count(*)/#{itemSearchCommand.rowRange})
+		FROM item i join item_img g
+		ON i.item_id = g.item_id 
+		<where>
+			<if test="itemSearchCommand.searchQuery!=null and itemSearchCommand.searchBy eq null">
+				item_nm like concat('%',#{itemSearchCommand.searchQuery},'%')
+			</if>
+		
+			<if test="itemSearchCommand.searchQuery!=null and itemSearchCommand.searchBy!=null">
+				<choose>
+					<when test="itemSearchCommand.searchBy eq 'item_nm'">
+					 item_nm like concat('%',#{itemSearchCommand.searchQuery},'%')					
+					</when>
+					<when test="itemSearchCommand.searchBy eq 'created_by'">
+					 i.created_by like concat('%',#{itemSearchCommand.searchQuery},'%')					
+					</when>
+				</choose>
+			</if>
+			
+			<if test="itemSearchCommand.searchDateType!=null and itemSearchCommand.searchDateType!='all' ">
+				<choose>
+					<when test="itemSearchCommand.searchDateType eq '1d'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 day) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '1w'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 week) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '1m'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 1 month) AND NOW())
+					</when>
+					<when test="itemSearchCommand.searchDateType eq '6m'">
+					and (i.reg_time BETWEEN DATE_SUB(NOW(), INTERVAL 6 month) AND NOW())
+					</when>
+				</choose>
+				
+			</if>
+			<if test="itemSearchCommand.searchSellStatus!=null">
+				and item_sell_status = #{itemSearchCommand.searchSellStatus}
+			</if>
+			and repimg_yn = 'Y'
+		</where>
+	</select> 
+	
+	<select id="getItemDtl" parameterType="Long" resultMap="ItemDtoMap">
+		SELECT i.item_id,item_nm,item_detail,price, item_sell_status, i.stock_number
+		,i.reg_time,i.created_by,img_url,item_img_id, ori_img_name
+		FROM item i join item_img g
+		ON i.item_id = g.item_id 
+		where i.item_id = #{item_id}
+	</select>
+	
+	<update id="updateItem" parameterType="ItemDto">
+		update item set item_sell_status = #{item_sell_status}
+		               ,item_nm = #{item_nm}
+		               ,price = #{price}
+		               ,stock_number = #{stock_number}
+		               ,item_detail = #{item_detail}
+		               ,update_time = SYSDATE()
+		               ,modified_by = #{modified_by}
+		where item_id = #{item_id}               
+	</update>
+</mapper>
+
+
