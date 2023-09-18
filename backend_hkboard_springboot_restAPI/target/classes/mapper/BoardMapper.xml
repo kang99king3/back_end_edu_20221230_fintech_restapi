@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hk.board.daos.IHkDao">
+	
+<!-- 	<select id="getAllList" resultType="HkDto"> -->
+<!-- 		SELECT SEQ, ID, TITLE, CONTENT, REGDATE FROM HKBOARD  -->
+<!-- 		ORDER BY REGDATE DESC -->
+		
+<!-- 		SELECT SEQ, ID, TITLE, CONTENT, REGDATE FROM HKBOARD  -->
+<!-- 		ORDER BY REGDATE DESC -->
+<!-- 		limit #{size} offset #{offset} -->
+<!-- 	</select> -->
+	
+	<select id="getAllList" resultType="HkDto" parameterType="Map"> 
+		SELECT  seq, id, title, content, regdate
+		FROM (SELECT ROW_NUMBER() OVER(ORDER BY regdate DESC) rn,
+					 seq, id, title, content, regdate
+				FROM hkboard ) a 
+		WHERE ceil(rn/#{row}) = #{page}
+	</select>
+	
+	<select id="getAllListCount" resultType="int" >
+		select count(*) from hkboard
+	</select>
+	
+	<select id="getBoard" parameterType="int" resultType="HkDto">
+		SELECT SEQ, ID, TITLE, CONTENT, REGDATE 
+		FROM HKBOARD WHERE SEQ=#{seq}	
+	</select>
+	
+	<insert id="insertBoard" parameterType="HkDto" >
+		INSERT INTO HKBOARD 
+		VALUES(NULL, #{id}, #{title}, #{content}, SYSDATE())
+	</insert>
+	
+	<update id="updateBoard" parameterType="HkDto" >
+		UPDATE HKBOARD SET TITLE=#{title}, CONTENT=#{content},REGDATE=SYSDATE() 
+		WHERE SEQ=#{seq} 
+	</update>
+	
+	<delete id="deleteBoard" parameterType="int">
+		 DELETE FROM HKBOARD WHERE SEQ=#{seq} 
+	</delete>
+	
+	<delete id="muldel" parameterType="Map">
+		 DELETE FROM HKBOARD WHERE SEQ IN
+		 <foreach collection="seqs" item="seq" separator="," open="(" close=")">
+			 #{seq} 		 
+		 </foreach>
+	</delete>
+	
+
+</mapper>
